@@ -4,3 +4,4 @@ node_modules/
 
 # IMPORTANT: never ignore .kiro — Kiroween requires the /.kiro directory
 # at the repo root to prove Kiro usage. Do NOT add .kiro here.
+demo-video.mp4
