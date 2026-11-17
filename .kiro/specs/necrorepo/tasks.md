@@ -24,8 +24,8 @@
 - [x] Bus-factor signal (contributors count) in the autopsy
 - [x] Dependency autopsy: paste a repo -> autopsy its package.json dependencies
 - [x] Shareable cemetery via URL hash
-- [ ] Real-browser visual check (screenshots at 1440x900) + fix any layout issues
-- [ ] README demo GIF / screenshots
+- [x] Real-browser visual check (screenshots at 1440x900) + fix any layout issues — done 2026-11-17: real Chromium via CDP, no horizontal overflow, no layout issues found; screenshots in docs/screenshots/
+- [x] README demo GIF / screenshots — done 2026-11-17: docs/screenshots/demo.gif + 3 PNGs, README Screenshots section
 
 ## Milestone 3 — Publish + submit (before 3 Dec)
 - [ ] Create public GitHub repo under the user account (needs the user) with /.kiro at root

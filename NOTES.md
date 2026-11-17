@@ -40,12 +40,24 @@
 7. Optional GitHub token field (Bearer auth, never stored) for the 60 req/hr unauthenticated limit, with a clear rate-limit message.
 8. Graveyard UI: tombstone cards, health bars, status badges, fog + moon, keyboard-accessible cards, no CDN/fonts/trackers (works offline except API calls).
 
-## Kiro CLI auth status (BLOCKER — needs the user)
+## Kiro CLI auth status (DONE 2026-11-17)
 - CLI installed: `~/.local/bin/kiro-cli`, version 3.4.0 (NOT on default PATH — use the full path or add `~/.local/bin` to PATH).
-- `kiro-cli whoami` → **"Not logged in"**.
-- Login path: `kiro-cli login --social google --use-device-flow --license free` — prints a URL + code; the user opens it in their browser and approves with the Google account oyentv770@gmail.com. **This cannot be done headlessly by the agent; it needs the user.**
-- Kiro web account itself exists and is confirmed: oyentv770@gmail.com, free plan, 0/50 credits, user ID `d-9067c98495.04d82458-b051-70bd-86ca-6fff707e3655`. (Kiro Web home shows an upgrade wall for the web app, but the account + CLI free tier are separate.)
-- **Honesty note:** the scaffold in this repo was authored in this session by the agent (Muse), NOT yet through a Kiro agent session, because the CLI is unauthenticated. The `.kiro/` files are real spec/steering/agent/hook artefacts written to the Kiro conventions, and the build plan (tasks.md Milestone 1) requires running actual Kiro sessions once logged in — the "built with Kiro" claim for the submission must rest on those sessions, not on this scaffold alone.
+- `kiro-cli whoami` → **"Logged in with Builder ID, Email: oyentv770@gmail.com"** (verified by the agent on 2026-11-17; the user approved the device-flow login on their phone at ~16:21 WIB, code MZLN-KCDM).
+- Login path used: `kiro-cli login --social google --use-device-flow --license free`.
+- Kiro web account: oyentv770@gmail.com, free plan, 0/50 credits, user ID `d-9067c98495.04d82458-b051-70bd-86ca-6fff707e3655`. (Kiro Web home shows an upgrade wall for the web app, but the account + CLI free tier are separate.)
+- **Non-interactive sessions work** with: `kiro-cli chat --no-interactive --trust-all-tools --trust-workspace --v3 "<prompt>" </dev/null` (output to a log file). Gotcha: without `</dev/null` the session hangs waiting on stdin (looks like a confirmation prompt but is just an open stdin); with a PTY unavailable, `</dev/null` is the fix. Sessions are saved and listed with `kiro-cli chat --list-sessions`; resume with `--resume-id <sess_id>`. Free-plan credit use: 3 sessions + 1 resume used so far (probe OK + session 1 + session 2 + session 2 resume + session 3) — well within 50/month.
+
+## Milestones 1 + 2 — DONE 2026-11-17 (real Kiro agent sessions)
+- **M1 login** — committed `61e1814`.
+- **Kiro session 1** (sess_424f61d0, "Implement NecroRepo Bus Factor Signal") — review vs spec (5 gaps found + fixed: demo unsorted, share-btn missing, detail-busfactor missing, hook schema wrong, harness in /tmp), bus-factor signal, shareable cemetery via URL hash, hook rewritten to valid v1 schema, harness moved to `tests/dom-harness.cjs`. 35/35 checks. Committed `bf04f28`. Full log: `/tmp/kiro-session1.log`.
+- **Kiro session 2** (sess_e6fa4f7c, "Implement NecroRepo Dependency Autopsy") — dependency autopsy (package.json via GitHub contents API + per-dep npm check). **Interrupted mid-run by a runtime restart**; resumed with `--resume-id` and finished (call site, exports, CSS, tests, tasks.md). 57 assertions. Committed `2e76c02`. Full logs: `/tmp/kiro-session2.log` (empty — killed), `/tmp/kiro-session2b.log`.
+- **Kiro session 3** (npm publish-date bug fix) — verification found the session-2 code read `meta.time.modified` from the npm `/latest` endpoint, which returns `time: null` — every dep would have scored dead. Fixed to fetch the full packument and read `time[latestVersion]` (fallback `time.modified`) via pure `latestPublishDate()`. Live-verified against the real npm registry (loose-envify 1.4.0 → 2018-07-10 dead; @babel/cli → 2026-11-02 fresh) and the GitHub contents API (facebook/react package.json parses to 20 devDeps). 60 harness checks pass (Kiro reported 59; independent count is 60 `ok:` lines, exit 0). Committed as "Kiro session 3: fix dep autopsy npm publish-date source".
+- **Honesty note (updated):** the scaffold (M0) was authored by the agent (Muse), but **all Milestone 2 features were implemented by real Kiro CLI agent sessions** (logged in as oyentv770@gmail.com, sessions listed above). The "built with Kiro" claim for the submission rests on those sessions plus the `.kiro/` spec/steering/agent/hook artefacts.
+
+## Real-browser visual check (done 2026-11-17)
+- Chromium (`/opt/meta-chromium/chrome`, "Muse Browser 157") works again via a recreated WebGL domain-policy file: `~/.local/share/hatch-webgl-policy.txt` (header line `hatch-webgl-allowed-domains-v1` + sorted registrable domain, e.g. `example.com`) + sha256 passed as `--hatch-webgl-allowed-domains-file` / `--hatch-webgl-allowed-domains-sha256` (validate with `--hatch-validate-webgl-allowed-domains --version`). The old one-shot `--screenshot`/`--dump-dom` flags exit silently without output in this build — use the CDP route: launch with `--remote-debugging-port=NNNN` and drive it with the Node CDP scripts in `/tmp` (`/tmp/shoot-necro.mjs` — home/demo/detail screenshots at 1440×900; `/tmp/shoot-live.mjs` — live repo inspect flow).
+- **Caveats:** this build blocks `http://localhost` navigation (Local Network Access check) — screenshots were taken via `file:///home/hatch/workspace/kiroween/app/index.html`, which renders identically. The VM's internet goes through an authenticated egress proxy (`$https_proxy`) that Chrome cannot use (`ERR_NO_SUPPORTED_PROXIES`), so in-browser GitHub/npm API calls fail inside this VM's Chromium only — on GitHub Pages / a judge's browser they work normally. The app degrades gracefully everywhere (verified in screenshots: bus factor "unknown", deps "No package.json", forks "Could not search forks" — all inline, nothing breaks).
+- **Result:** no horizontal overflow (scrollW == clientW), no layout issues found, dead-first sorting confirmed visually, Copy share link button present, detail panel clean. Screenshots: `docs/screenshots/home.png`, `demo-cemetery.png`, `autopsy-detail.png` + `demo.gif` (ffmpeg slideshow, 720w, 6s). README has a Screenshots section.
 
 ## What was scaffolded (this session, 2026-11-17)
 ```
@@ -73,13 +85,13 @@
 - **NOT verified:** real-browser render. The VM's Chromium (`/opt/meta-chromium/chrome`) refuses to start without its WebGL domain-policy file (`hatch-webgl-all-origins-v1`), which is no longer on disk (the old CDP workaround from the token-radar work is unusable until that file is restored). Re-verify visually in a real browser before recording the demo video.
 
 ## Build plan (summary — full milestones in .kiro/specs/necrorepo/tasks.md)
-- **M1 (blocked on user):** CLI login → Kiro agent sessions review/extend the scaffold → validate hook schema.
-- **M2 (by 28 Nov):** bus-factor signal, dependency autopsy (package.json), shareable cemetery via URL hash, real-browser visual check + screenshots.
+- **M1 (DONE 2026-11-17):** CLI login → real Kiro agent sessions → hook schema validated.
+- **M2 (DONE 2026-11-17):** bus-factor signal, dependency autopsy (package.json), shareable cemetery via URL hash, real-browser visual check + screenshots, README demo GIF/screenshots.
 - **M3 (by 3 Dec):** public GitHub repo under the user's account (needs the user — never touch emagaul135 without asking) → GitHub Pages deploy → demo video (<3 min, public YouTube) → Kiro-usage write-up → Devpost submit (Resurrection) → Social Blitz post + bonus blog post → claim 4,000 credits (user ID verification by 1 Dec 12:00 PT).
 
 ## Open items / risks
-- Kiro CLI login needs the user (device-flow URL approval). Without it, no genuine Kiro agent session can run — the biggest submission-integrity risk.
+- GitHub repo creation + push needs the user (their account emagaul135; never touch without asking). **This is the next blocker for M3.**
 - GitHub API unauthenticated limit is 60 req/hr; a judge inspecting a big user could hit it — the token field + demo mode mitigate, but a cached demo video matters.
 - The 4,000-credit claim needs the user's selfie + KTP (Didit) — only the user can do it, deadline 1 Dec 12:00 PT.
-- GitHub repo creation + push needs the user (their account emagaul135; never touch without asking).
-- Demo video: needs a real-browser screen recording; the VM cannot render the app in Chromium right now (see verification note).
+- Demo video: needs a real-browser screen recording; the VM's Chromium can screenshot via CDP but cannot reach the internet (egress proxy), so live API calls will show graceful "unknown" states in a VM-recorded video — record the demo from a real browser with internet, or use the demo cemetery + pre-recorded live walkthrough. The GitHub API live path is verified via curl/node, not in the VM browser.
+- In-browser live API calls cannot be visually verified on this VM (see visual-check caveats above) — verify once more after the GitHub Pages deploy, from a normal browser.

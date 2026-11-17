@@ -12,12 +12,26 @@
    GitHub API and performs an *autopsy*: last push, open issues, stars, archived state.
 2. **Diagnose** — each repo gets a health score (0–100) and a status:
    `Thriving` · `Alive` · `Ailing` · `Dying` · `Dead` (buried). Dead repos become
-   tombstones in your cemetery.
+   tombstones in your cemetery. The autopsy also shows the **bus factor** (how many
+   contributors keep the project alive) and a **dependency autopsy** (each
+   `package.json` dependency checked against npm for its last publish date).
 3. **Resurrect** — for dead or dying repos, NecroRepo finds the most alive fork
    (recent pushes + stars) and gives you an adoption checklist: fork it, revive the
    README, close the rot, publish a release.
 4. **Remember** — your cemetery is saved in the browser (localStorage). Come back
    anytime for a *séance* — a one-click re-check of everything you buried.
+5. **Share** — copy a share link: your cemetery travels in the URL hash
+   (`#cemetery=owner/repo,...`), so anyone opening the link sees the same graves.
+
+## Screenshots
+
+![NecroRepo demo](docs/screenshots/demo.gif)
+
+| Home | Demo cemetery | Autopsy detail |
+| --- | --- | --- |
+| ![Home](docs/screenshots/home.png) | ![Demo cemetery](docs/screenshots/demo-cemetery.png) | ![Autopsy detail](docs/screenshots/autopsy-detail.png) |
+
+Screenshots are 1440×900, taken in a real browser.
 
 No sign-up, no server, no data leaves your browser except calls to the public
 GitHub API. Add an optional personal access token if you hit the unauthenticated
