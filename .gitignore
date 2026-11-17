@@ -1,0 +1,6 @@
+# Dependencies / caches — never commit these.
+node_modules/
+.DS_Store
+
+# IMPORTANT: never ignore .kiro — Kiroween requires the /.kiro directory
+# at the repo root to prove Kiro usage. Do NOT add .kiro here.
