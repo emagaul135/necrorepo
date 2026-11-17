@@ -29,7 +29,7 @@
 
 ## Milestone 3 — Publish + submit (before 3 Dec)
 - [x] Create public GitHub repo under the user account (needs the user) with /.kiro at root — done 2026-11-17: https://github.com/emagaul135/necrorepo, branch master, commit 459e427
-- [ ] Deploy to GitHub Pages, verify the live URL works for a stranger
+- [x] Deploy to GitHub Pages, verify the live URL works for a stranger — done 2026-11-17: https://emagaul135.github.io/necrorepo/ (legacy, master/docs; index/app.js/css all 200, status built)
 - [ ] Record the <3 min demo video, publish public on YouTube (Abang Oyen TV)
 - [x] Write the Kiro-usage write-up — SUBMISSION.md (2026-11-17, sessions sess_424f61d0, sess_e6fa4f7c, sess_93308a38)
 - [ ] Submit on Devpost (Resurrection) + Social Blitz post (#KiroweenHackathon26) + blog post
