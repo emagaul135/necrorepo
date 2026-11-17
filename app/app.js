@@ -73,6 +73,48 @@ function scoreRepo(r) {
 }
 
 /**
+ * Map idle months (since last npm publish) to a dep health status.
+ * Mirrors the five health buckets used by scoreRepo / statusOf.
+ * Pure function -- no DOM access.
+ * @param {number} months  Idle months (use Infinity for unknown/never).
+ * @returns {'fresh'|'alive'|'stale'|'dying'|'dead'}
+ */
+function depStatusOf(months) {
+  if (months < 3)  return 'fresh';
+  if (months < 6)  return 'alive';
+  if (months < 12) return 'stale';
+  if (months < 48) return 'dying';
+  return 'dead';
+}
+
+/**
+ * Parse a package.json text and return a flat array of dependency entries
+ * (dependencies first, then devDependencies), capped at `limit`.
+ * Pure function -- no DOM access.
+ * @param {string} jsonText   Raw package.json content (not base64).
+ * @param {number} [limit=20]
+ * @returns {Array<{name:string, range:string, isDev:boolean}>}
+ */
+function parsePackageJsonDeps(jsonText, limit) {
+  if (limit === undefined) limit = 20;
+  var pkg;
+  try { pkg = JSON.parse(jsonText); } catch (e) { return []; }
+  var out = [];
+  var deps    = (pkg && pkg.dependencies)    || {};
+  var devDeps = (pkg && pkg.devDependencies) || {};
+  var allDeps = Object.keys(deps);
+  var allDev  = Object.keys(devDeps);
+  for (var i = 0; i < allDeps.length && out.length < limit; i++) {
+    out.push({ name: allDeps[i], range: String(deps[allDeps[i]]), isDev: false });
+  }
+  for (var j = 0; j < allDev.length && out.length < limit; j++) {
+    out.push({ name: allDev[j], range: String(devDeps[allDev[j]]), isDev: true });
+  }
+  return out;
+}
+
+
+/**
  * Map a contributor count to a bus-factor label string.
  * Pure function — no DOM access.
  * @param {number} n  Number of contributors (integer >= 0).
@@ -233,6 +275,12 @@ async function showDetail(i) {
     bfEl.textContent = '👥 Bus factor unknown — could not read contributors.';
   });
 
+  // Dependency autopsy — fires async, never breaks the panel.
+  loadDependencyAutopsy(r.full_name, a.status).catch(() => {
+    const c = document.getElementById('detail-deps-container');
+    if (c) c.innerHTML = '<p>Dependency autopsy unavailable.</p>';
+  });
+
   panel.hidden = false;
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -275,6 +323,108 @@ async function fetchBusFactor(fullName) {
 }
 
 /* ------------------------------------------------------------------ */
+/**
+ * Fetch and render the dependency autopsy for a repo into #detail-deps-container.
+ * Shows up to 20 deps (dependencies first, devDependencies second).
+ * Never throws -- on any failure, the section shows an inline error message.
+ *
+ * @param {string} fullName  "owner/repo"
+ * @param {string} status    Current repo status ('thriving'|'alive'|'ailing'|'dying'|'dead')
+ */
+async function loadDependencyAutopsy(fullName, status) {
+  const container = document.getElementById('detail-deps-container');
+  if (!container) return;
+
+  if (status === 'thriving' || status === 'alive') {
+    container.innerHTML = '<p class="dep-skip">This project is healthy — dep autopsy skipped.</p>';
+    return;
+  }
+
+  container.innerHTML = '<p>🔬 Examining dependencies…</p>';
+
+  try {
+    // Fetch package.json via GitHub contents API.
+    var pkgData;
+    try {
+      pkgData = await gh('/repos/' + encodeURIComponent(fullName.split('/')[0]) +
+        '/' + encodeURIComponent(fullName.split('/')[1]) + '/contents/package.json');
+    } catch (e) {
+      container.innerHTML = '<p>No package.json — nothing to autopsy.</p>';
+      return;
+    }
+
+    if (!pkgData || !pkgData.content) {
+      container.innerHTML = '<p>No package.json — nothing to autopsy.</p>';
+      return;
+    }
+
+    var jsonText;
+    try {
+      // GitHub base64 includes newlines; strip them before decoding.
+      jsonText = atob(pkgData.content.replace(/\s/g, ''));
+    } catch (e) {
+      container.innerHTML = '<p>Could not decode package.json.</p>';
+      return;
+    }
+
+    var deps = parsePackageJsonDeps(jsonText, 20);
+    if (!deps.length) {
+      container.innerHTML = '<p>No package.json — nothing to autopsy.</p>';
+      return;
+    }
+
+    // Build the table header immediately so the user sees something while we fetch.
+    container.innerHTML = '<p>🔍 Checking ' + deps.length + ' package' +
+      (deps.length === 1 ? '' : 's') + ' on npm…</p>';
+
+    // Fetch each package's npm metadata in parallel.
+    var rows = await Promise.all(deps.map(async function(dep) {
+      try {
+        var res = await fetch('https://registry.npmjs.org/' + encodeURIComponent(dep.name) + '/latest');
+        if (!res.ok) throw new Error('status ' + res.status);
+        var meta = await res.json();
+        var lastPublish = (meta.time && meta.time.modified) ? meta.time.modified : null;
+        var latestVer   = meta.version || '?';
+        var idle        = lastPublish ? monthsSince(lastPublish) : Infinity;
+        var st          = depStatusOf(idle);
+        var dateStr     = lastPublish ? new Date(lastPublish).toLocaleDateString('en-US',
+          { year: 'numeric', month: 'short', day: 'numeric' }) : 'unknown';
+        var npmUrl = 'https://www.npmjs.com/package/' + encodeURIComponent(dep.name);
+        return { dep: dep, latestVer: latestVer, dateStr: dateStr, status: st, ok: true };
+      } catch (e) {
+        return { dep: dep, latestVer: '?', dateStr: 'unknown', status: 'unknown', ok: false };
+      }
+    }));
+
+    var HTML = '<table class="dep-table"><thead><tr>' +
+      '<th>Package</th><th>Pinned</th><th>Latest</th><th>Last publish</th><th>Status</th>' +
+      '</tr></thead><tbody>';
+    for (var i = 0; i < rows.length; i++) {
+      var row = rows[i];
+      var npmUrl = 'https://www.npmjs.com/package/' + encodeURIComponent(row.dep.name);
+      var devMark = row.dep.isDev ? '<span class="dep-dev">dev</span> ' : '';
+      if (!row.ok) {
+        HTML += '<tr><td>' + devMark + '<a href="' + escapeHtml(npmUrl) + '" target="_blank" rel="noopener">' +
+          escapeHtml(row.dep.name) + '</a></td>' +
+          '<td>' + escapeHtml(row.dep.range) + '</td>' +
+          '<td colspan="3">unknown — could not check</td></tr>';
+      } else {
+        HTML += '<tr><td>' + devMark + '<a href="' + escapeHtml(npmUrl) + '" target="_blank" rel="noopener">' +
+          escapeHtml(row.dep.name) + '</a></td>' +
+          '<td>' + escapeHtml(row.dep.range) + '</td>' +
+          '<td>' + escapeHtml(row.latestVer) + '</td>' +
+          '<td>' + escapeHtml(row.dateStr) + '</td>' +
+          '<td><span class="badge badge-' + escapeHtml(row.status) + '">' +
+          escapeHtml(row.status) + '</span></td></tr>';
+      }
+    }
+    HTML += '</tbody></table>';
+    container.innerHTML = HTML;
+  } catch (e) {
+    container.innerHTML = '<p>Dependency autopsy failed: ' + escapeHtml(e.message) + '</p>';
+  }
+}
+
 /* Wiring (browser only — skipped under node for testing)              */
 /* ------------------------------------------------------------------ */
 if (typeof document !== 'undefined') {
@@ -374,5 +524,5 @@ document.getElementById('share-btn').addEventListener('click', async () => {
 
 /* Node test export (ignored in the browser). */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { scoreRepo, statusOf, monthsSince, busFactorLabel, DEMO_CEMETERY, renderCemetery, showDetail };
+  module.exports = { scoreRepo, statusOf, monthsSince, busFactorLabel, depStatusOf, parsePackageJsonDeps, DEMO_CEMETERY, renderCemetery, showDetail };
 }

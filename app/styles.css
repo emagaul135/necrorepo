@@ -148,3 +148,49 @@ select, input[type="text"], input[type="password"] {
   h1 { font-size: 32px; }
   .moon { width: 48px; height: 48px; right: 16px; }
 }
+
+/* --- Dependency autopsy table --- */
+.dep-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  margin: 8px 0 4px;
+}
+.dep-table th {
+  text-align: left;
+  color: var(--ink-dim);
+  font-weight: normal;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+  border-bottom: 1px solid var(--line);
+  padding: 4px 8px 4px 0;
+}
+.dep-table td {
+  padding: 5px 8px 5px 0;
+  border-bottom: 1px solid var(--bg-2);
+  vertical-align: middle;
+  word-break: break-word;
+}
+.dep-table tr:last-child td { border-bottom: none; }
+.dep-table a { color: var(--purple); text-decoration: none; }
+.dep-table a:hover { text-decoration: underline; }
+
+.dep-dev {
+  display: inline-block;
+  font-size: 10px;
+  font-family: monospace;
+  color: var(--ink-dim);
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  padding: 0 3px;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+.dep-skip { color: var(--ink-dim); font-style: italic; font-size: 14px; }
+/* badge-alive and badge-stale reuse existing badge vars; add missing ones */
+.badge-fresh  { background: #2d5a2d; color: var(--green); }
+.badge-stale  { background: #5a3d1a; color: var(--amber); }
+.badge-unknown { background: var(--bg-2); color: var(--ink-dim); border: 1px solid var(--line); }

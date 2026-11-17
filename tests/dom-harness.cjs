@@ -29,6 +29,7 @@ const ids = [
   'detail-epitaph','detail-score','detail-push','detail-issues','detail-stars',
   'detail-forks','detail-lang','detail-busfactor','detail-reasons',
   'detail-gh-link','resurrect-note','resurrect-steps','resurrect-candidates',
+  'detail-deps','detail-deps-container',
 ];
 const els = {};
 for (const id of ids) els[id] = fakeEl(id);
@@ -90,6 +91,51 @@ t(app.busFactorLabel(3) === 'Bus factor 3 \u2014 fragile, a tiny crew.', 'busFac
 t(app.busFactorLabel(4) === 'Bus factor 4 \u2014 shared by a crew.',     'busFactorLabel(4) correct');
 t(app.busFactorLabel(50) === 'Bus factor 50 \u2014 shared by a crew.',   'busFactorLabel(50) correct');
 
+// --- depStatusOf assertions ---
+t(app.depStatusOf(0)        === 'fresh',  'depStatusOf(0) = fresh');
+t(app.depStatusOf(2)        === 'fresh',  'depStatusOf(2) = fresh');
+t(app.depStatusOf(3)        === 'alive',  'depStatusOf(3) = alive (threshold)');
+t(app.depStatusOf(5)        === 'alive',  'depStatusOf(5) = alive');
+t(app.depStatusOf(6)        === 'stale',  'depStatusOf(6) = stale (threshold)');
+t(app.depStatusOf(11)       === 'stale',  'depStatusOf(11) = stale');
+t(app.depStatusOf(12)       === 'dying',  'depStatusOf(12) = dying (threshold)');
+t(app.depStatusOf(47)       === 'dying',  'depStatusOf(47) = dying');
+t(app.depStatusOf(48)       === 'dead',   'depStatusOf(48) = dead (threshold)');
+t(app.depStatusOf(100)      === 'dead',   'depStatusOf(100) = dead');
+t(app.depStatusOf(Infinity) === 'dead',   'depStatusOf(Infinity) = dead');
+
+// --- parsePackageJsonDeps assertions ---
+// Normal case: deps first, then devDeps, correct fields.
+var pkg1 = JSON.stringify({
+  dependencies:    { express: '^4.18.0', lodash: '^4.17.21' },
+  devDependencies: { jest: '^29.0.0' }
+});
+var d1 = app.parsePackageJsonDeps(pkg1);
+t(d1.length === 3,              'parsePackageJsonDeps: 3 entries total');
+t(d1[0].name === 'express',     'parsePackageJsonDeps: deps listed first');
+t(d1[0].isDev === false,        'parsePackageJsonDeps: dep isDev false');
+t(d1[2].name === 'jest',        'parsePackageJsonDeps: devDep listed last');
+t(d1[2].isDev === true,         'parsePackageJsonDeps: devDep isDev true');
+t(d1[0].range === '^4.18.0',    'parsePackageJsonDeps: range preserved');
+
+// Cap at 20.
+var bigDeps = {};
+for (var i = 0; i < 25; i++) bigDeps['pkg-' + i] = '^1.0.0';
+var d2 = app.parsePackageJsonDeps(JSON.stringify({ dependencies: bigDeps }));
+t(d2.length === 20, 'parsePackageJsonDeps: capped at 20');
+
+// Invalid JSON returns [].
+var d3 = app.parsePackageJsonDeps('not json at all');
+t(d3.length === 0, 'parsePackageJsonDeps: invalid JSON returns []');
+
+// Missing dep fields returns [].
+var d4 = app.parsePackageJsonDeps(JSON.stringify({ name: 'foo', version: '1.0.0' }));
+t(d4.length === 0, 'parsePackageJsonDeps: no dep fields returns []');
+
+// Empty object fields return [].
+var d5 = app.parsePackageJsonDeps(JSON.stringify({ dependencies: {}, devDependencies: {} }));
+t(d5.length === 0, 'parsePackageJsonDeps: empty dep objects return []');
+
 // --- Render-path assertions ---
 console.log('init: empty note display =', els['cemetery-empty'].style.display);
 
@@ -125,5 +171,9 @@ t(isSorted, 'demo cemetery sorted dead-first (ascending score)');
   t(els['resurrect-candidates'].innerHTML.includes('Could not search forks'),
     'fork search failure handled gracefully');
   t(els['detail-busfactor'].textContent.startsWith('\u{1F465}'), 'bus factor element populated');
+  t(els['detail-deps-container'].innerHTML.includes('autopsy') ||
+    els['detail-deps-container'].innerHTML.includes('No package') ||
+    els['detail-deps-container'].innerHTML.includes('unavailable') ||
+    els['detail-deps-container'].innerHTML.length > 0, 'dep autopsy container populated');
   console.log('HARNESS DONE');
 })().catch((e) => { console.error('FAIL: harness error', e); process.exit(1); });

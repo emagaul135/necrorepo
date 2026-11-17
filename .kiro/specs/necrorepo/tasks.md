@@ -22,7 +22,7 @@
 
 ## Milestone 2 — Polish to submittable (before 28 Nov)
 - [x] Bus-factor signal (contributors count) in the autopsy
-- [ ] Dependency autopsy: paste a repo -> autopsy its package.json dependencies
+- [x] Dependency autopsy: paste a repo -> autopsy its package.json dependencies
 - [x] Shareable cemetery via URL hash
 - [ ] Real-browser visual check (screenshots at 1440x900) + fix any layout issues
 - [ ] README demo GIF / screenshots
