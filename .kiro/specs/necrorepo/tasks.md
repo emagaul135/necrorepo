@@ -28,9 +28,9 @@
 - [x] README demo GIF / screenshots — done 2026-11-17: docs/screenshots/demo.gif + 3 PNGs, README Screenshots section
 
 ## Milestone 3 — Publish + submit (before 3 Dec)
-- [ ] Create public GitHub repo under the user account (needs the user) with /.kiro at root
+- [x] Create public GitHub repo under the user account (needs the user) with /.kiro at root — done 2026-11-17: https://github.com/emagaul135/necrorepo, branch master, commit 459e427
 - [ ] Deploy to GitHub Pages, verify the live URL works for a stranger
 - [ ] Record the <3 min demo video, publish public on YouTube (Abang Oyen TV)
-- [ ] Write the Kiro-usage write-up
+- [x] Write the Kiro-usage write-up — SUBMISSION.md (2026-11-17, sessions sess_424f61d0, sess_e6fa4f7c, sess_93308a38)
 - [ ] Submit on Devpost (Resurrection) + Social Blitz post (#KiroweenHackathon26) + blog post
 - [ ] Claim 4,000 free Kiro credits (ID verification by 1 Dec 2026 12:00 PT)

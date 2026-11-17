@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NecroRepo — the graveyard where dead code comes back to life</title>
+<meta name="description" content="Autopsy your GitHub dependencies, bury the dead ones, and resurrect the maintained fork.">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<div class="moon" aria-hidden="true"></div>
+<div class="fog fog-a" aria-hidden="true"></div>
+<div class="fog fog-b" aria-hidden="true"></div>
+
+<header class="site-header">
+  <div class="brand">
+    <span class="brand-skull" aria-hidden="true">☠</span>
+    <div>
+      <h1>NecroRepo</h1>
+      <p class="tagline">The graveyard where dead code comes back to life.</p>
+    </div>
+  </div>
+  <p class="header-note">Abandoned open-source projects die quietly. We perform the autopsy —
+    and find the fork that can resurrect them.</p>
+</header>
+
+<main>
+  <section class="seance card">
+    <h2>🕯️ Hold a séance</h2>
+    <p>Inspect a GitHub user or a single repository. We read only public data
+       from the GitHub API — nothing is uploaded anywhere.</p>
+    <form id="inspect-form">
+      <div class="form-row">
+        <select id="inspect-kind" aria-label="Inspect type">
+          <option value="user">GitHub user / org</option>
+          <option value="repo">Single repo (owner/name)</option>
+        </select>
+        <input id="inspect-target" type="text" placeholder="e.g. torvalds  or  facebook/react"
+               autocomplete="off" spellcheck="false" required>
+        <button type="submit" class="btn btn-primary">Inspect the dead</button>
+      </div>
+      <div class="form-row form-row-small">
+        <input id="gh-token" type="password" placeholder="Optional GitHub token (raises the 60 req/hr limit)"
+               autocomplete="off" spellcheck="false">
+        <button type="button" id="demo-btn" class="btn btn-ghost">Open the demo cemetery</button>
+        <button type="button" id="recheck-btn" class="btn btn-ghost" disabled>Re-check my cemetery</button>
+        <button type="button" id="share-btn" class="btn btn-ghost" disabled>Copy share link</button>
+      </div>
+    </form>
+    <p id="status-line" class="status-line" role="status"></p>
+  </section>
+
+  <section class="legend card">
+    <h2>Reading the tombstones</h2>
+    <ul class="legend-list">
+      <li><span class="badge badge-thriving">Thriving</span> pushed in the last 3 months</li>
+      <li><span class="badge badge-alive">Alive</span> pushed in the last 6 months</li>
+      <li><span class="badge badge-ailing">Ailing</span> silent 6–12 months</li>
+      <li><span class="badge badge-dying">Dying</span> silent 1–4 years</li>
+      <li><span class="badge badge-dead">Dead</span> silent 4+ years, or archived</li>
+    </ul>
+  </section>
+
+  <section id="cemetery-section">
+    <div class="section-head">
+      <h2 id="cemetery-title">⚰️ The cemetery</h2>
+      <span id="cemetery-count" class="count"></span>
+    </div>
+    <p id="cemetery-empty" class="empty-note">No souls here yet. Inspect a user or open the
+      demo cemetery to raise the dead.</p>
+    <div id="cemetery" class="cemetery"></div>
+  </section>
+
+  <section id="detail" class="detail card" hidden>
+    <button id="detail-close" class="btn btn-ghost detail-close" type="button">✕ close</button>
+    <h2 id="detail-name"></h2>
+    <p id="detail-epitaph" class="epitaph"></p>
+    <dl class="autopsy">
+      <div><dt>Health score</dt><dd id="detail-score"></dd></div>
+      <div><dt>Last rites (last push)</dt><dd id="detail-push"></dd></div>
+      <div><dt>Open issues</dt><dd id="detail-issues"></dd></div>
+      <div><dt>Stars</dt><dd id="detail-stars"></dd></div>
+      <div><dt>Forks</dt><dd id="detail-forks"></dd></div>
+      <div><dt>Language</dt><dd id="detail-lang"></dd></div>
+    </dl>
+    <p id="detail-busfactor" class="busfactor-line"></p>
+    <h3>🩺 Autopsy notes</h3>
+    <ul id="detail-reasons" class="reasons"></ul>
+    <div id="detail-deps">
+      <h3>🧬 Dependency autopsy</h3>
+      <div id="detail-deps-container"></div>
+    </div>
+    <div id="detail-resurrect">
+      <h3>✨ Resurrection plan</h3>
+      <p id="resurrect-note"></p>
+      <ol id="resurrect-steps" class="steps"></ol>
+      <div id="resurrect-candidates"></div>
+    </div>
+    <p class="detail-links"><a id="detail-gh-link" href="#" target="_blank" rel="noopener">View on GitHub ↗</a></p>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <p>NecroRepo · Kiroween 2026 · Resurrection category · Built with Kiro</p>
+  <p class="footer-small">Data: public GitHub API. Your cemetery lives only in your browser (localStorage).</p>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
