@@ -1,1 +1,14 @@
-{"description":"DRAFT — validate against the real Kiro hook schema once the Kiro CLI is authenticated. Intended behaviour: on saving a file under app/, run the syntax check and the node test harness.","hooks":[{"actions":[{"command":"node --check app/app.js && node /tmp/dom-harness.cjs","type":"runCommand"}],"name":"necrorepo-on-save-test","trigger":{"paths":["app/*.js","app/*.html","app/*.css"],"type":"onFileSave"}}],"version":1}
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "necrorepo-on-save-test",
+      "trigger": "PostFileSave",
+      "matcher": "app/.*",
+      "action": {
+        "type": "command",
+        "command": "node --check app/app.js && node tests/dom-harness.cjs"
+      }
+    }
+  ]
+}

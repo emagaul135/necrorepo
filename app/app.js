@@ -1,6 +1,6 @@
 /* NecroRepo — graveyard for dead code.
  * Zero-dependency static app. Talks to the public GitHub REST API v3.
- * Pure logic (scoreRepo / statusOf) is exported for node testing via
+ * Pure logic (scoreRepo / statusOf / busFactor) is exported for node testing via
  * `module.exports` when running outside the browser.
  */
 'use strict';
@@ -72,6 +72,18 @@ function scoreRepo(r) {
   return { score, status: statusOf(score), reasons };
 }
 
+/**
+ * Map a contributor count to a bus-factor label string.
+ * Pure function — no DOM access.
+ * @param {number} n  Number of contributors (integer >= 0).
+ * @returns {string}
+ */
+function busFactorLabel(n) {
+  if (n === 1) return 'Bus factor 1 — a single keeper. If they leave, the project dies.';
+  if (n <= 3)  return `Bus factor ${n} — fragile, a tiny crew.`;
+  return `Bus factor ${n} — shared by a crew.`;
+}
+
 /* ------------------------------------------------------------------ */
 /* GitHub API                                                          */
 /* ------------------------------------------------------------------ */
@@ -115,7 +127,7 @@ async function findResurrectionCandidates(repo) {
 }
 
 /* ------------------------------------------------------------------ */
-/* Cemetery state (localStorage) + rendering                           */
+/* Cemetery state (localStorage) + URL hash                           */
 /* ------------------------------------------------------------------ */
 const STORE_KEY = 'necrorepo.cemetery.v1';
 let cemetery = loadCemetery();
@@ -124,11 +136,36 @@ function loadCemetery() {
   try { return JSON.parse(localStorage.getItem(STORE_KEY) || '[]'); }
   catch (e) { return []; }
 }
+
 function saveCemetery() {
   try { localStorage.setItem(STORE_KEY, JSON.stringify(cemetery)); } catch (e) { /* private mode */ }
+  updateHash();
   document.getElementById('recheck-btn').disabled = cemetery.length === 0;
+  document.getElementById('share-btn').disabled = cemetery.length === 0;
 }
 
+/** Encode the current cemetery into the URL hash without a navigation. */
+function updateHash() {
+  if (cemetery.length === 0) {
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+    return;
+  }
+  const encoded = cemetery.map(r => encodeURIComponent(r.full_name)).join(',');
+  history.replaceState(null, '', '#cemetery=' + encoded);
+}
+
+/** Read a cemetery list from the URL hash, or return null. */
+function hashRepos() {
+  const hash = window.location.hash;
+  if (!hash.startsWith('#cemetery=')) return null;
+  const raw = hash.slice('#cemetery='.length);
+  if (!raw) return null;
+  return raw.split(',').map(decodeURIComponent).filter(Boolean);
+}
+
+/* ------------------------------------------------------------------ */
+/* Rendering helpers                                                   */
+/* ------------------------------------------------------------------ */
 function fmtDate(iso) {
   if (!iso) return 'unknown';
   return new Date(iso).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
@@ -186,6 +223,16 @@ async function showDetail(i) {
   document.getElementById('detail-reasons').innerHTML =
     a.reasons.map(x => `<li>${escapeHtml(x)}</li>`).join('');
   document.getElementById('detail-gh-link').href = r.html_url || ('https://github.com/' + r.full_name);
+
+  // Bus-factor signal — fetch contributors, then update the element.
+  const bfEl = document.getElementById('detail-busfactor');
+  bfEl.textContent = '👥 Bus factor: loading…';
+  fetchBusFactor(r.full_name).then(label => {
+    bfEl.textContent = '👥 ' + label;
+  }).catch(() => {
+    bfEl.textContent = '👥 Bus factor unknown — could not read contributors.';
+  });
+
   panel.hidden = false;
   panel.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -215,6 +262,16 @@ async function showDetail(i) {
   } catch (e) {
     cand.innerHTML = `<p>Could not search forks: ${escapeHtml(e.message)}</p>`;
   }
+}
+
+/**
+ * Fetch contributor count for a repo and return the bus-factor label.
+ * Never throws — on any failure, returns the "unknown" string.
+ */
+async function fetchBusFactor(fullName) {
+  const contributors = await gh(`/repos/${fullName}/contributors?per_page=100`);
+  if (!Array.isArray(contributors)) throw new Error('unexpected response');
+  return busFactorLabel(contributors.length);
 }
 
 /* ------------------------------------------------------------------ */
@@ -250,7 +307,7 @@ document.getElementById('inspect-form').addEventListener('submit', async (e) => 
 });
 
 document.getElementById('demo-btn').addEventListener('click', () => {
-  cemetery = DEMO_CEMETERY.slice();
+  cemetery = DEMO_CEMETERY.slice().sort((a, b) => scoreRepo(a).score - scoreRepo(b).score);
   saveCemetery();
   renderCemetery('⚰️ The demo cemetery');
   setStatus('Demo cemetery raised — eight sample souls, no API calls needed.');
@@ -278,12 +335,44 @@ document.getElementById('detail-close').addEventListener('click', () => {
   document.getElementById('detail').hidden = true;
 });
 
-/* Init */
-saveCemetery();
-renderCemetery();
+document.getElementById('share-btn').addEventListener('click', async () => {
+  if (!cemetery.length) return;
+  const url = window.location.href;
+  try {
+    await navigator.clipboard.writeText(url);
+    setStatus('Share link copied.');
+  } catch (e) {
+    setStatus('Share link: ' + url);
+  }
+});
+
+/* Init — load from URL hash first, then localStorage. */
+(async function init() {
+  const fromHash = hashRepos();
+  if (fromHash && fromHash.length > 0) {
+    setStatus(`Loading ${fromHash.length} repos from shared link…`);
+    const loaded = [];
+    const failed = [];
+    for (const name of fromHash) {
+      try { loaded.push(await fetchRepo(name)); }
+      catch (e) { failed.push(name); }
+    }
+    cemetery = loaded.sort((a, b) => scoreRepo(a).score - scoreRepo(b).score);
+    saveCemetery();
+    renderCemetery('⚰️ Shared cemetery');
+    if (failed.length) {
+      setStatus(`Loaded ${loaded.length} repo${loaded.length === 1 ? '' : 's'}. Could not fetch: ${failed.join(', ')}.`);
+    } else {
+      setStatus(`Loaded ${loaded.length} repo${loaded.length === 1 ? '' : 's'} from shared link.`);
+    }
+  } else {
+    saveCemetery();
+    renderCemetery();
+  }
+})();
 } // end browser-only wiring
 
 /* Node test export (ignored in the browser). */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { scoreRepo, statusOf, monthsSince, DEMO_CEMETERY, renderCemetery, showDetail };
+  module.exports = { scoreRepo, statusOf, monthsSince, busFactorLabel, DEMO_CEMETERY, renderCemetery, showDetail };
 }

@@ -139,6 +139,7 @@ select, input[type="text"], input[type="password"] {
 }
 .candidate a { font-weight: bold; }
 .detail-links { margin-top: 16px; }
+.busfactor-line { color: var(--ink-dim); font-size: 14px; margin: 6px 0 12px; }
 
 .site-footer { max-width: 960px; margin: 0 auto; padding: 0 20px 40px; color: var(--ink-dim); font-size: 14px; }
 .footer-small { font-size: 12px; }
