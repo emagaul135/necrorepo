@@ -136,6 +136,35 @@ t(d4.length === 0, 'parsePackageJsonDeps: no dep fields returns []');
 var d5 = app.parsePackageJsonDeps(JSON.stringify({ dependencies: {}, devDependencies: {} }));
 t(d5.length === 0, 'parsePackageJsonDeps: empty dep objects return []');
 
+// --- latestPublishDate assertions ---
+// (1) Full packument with time map containing the latest version date.
+var pack1 = {
+  'dist-tags': { latest: '2.0.0' },
+  version: '2.0.0',
+  time: { '1.0.0': '2020-01-01T00:00:00Z', '2.0.0': '2023-06-15T12:00:00Z', modified: '2023-06-15T12:00:00Z' }
+};
+t(app.latestPublishDate(pack1) === '2023-06-15T12:00:00Z',
+  'latestPublishDate: returns time[latestVersion] when present');
+
+// (2) Packument with only time.modified and no entry for the latest version.
+var pack2 = {
+  'dist-tags': { latest: '3.0.0' },
+  version: '3.0.0',
+  time: { '1.0.0': '2019-03-01T00:00:00Z', modified: '2021-09-10T08:00:00Z' }
+};
+t(app.latestPublishDate(pack2) === '2021-09-10T08:00:00Z',
+  'latestPublishDate: falls back to time.modified when no entry for latest version');
+
+// (3) Packument with no time field at all.
+var pack3 = { 'dist-tags': { latest: '1.0.0' }, version: '1.0.0' };
+t(app.latestPublishDate(pack3) === null,
+  'latestPublishDate: returns null when no time field');
+
+// (4) /latest-style doc with time: null (the broken old path).
+var pack4 = { version: '1.0.0', time: null };
+t(app.latestPublishDate(pack4) === null,
+  'latestPublishDate: returns null when time is null (/latest-style doc)');
+
 // --- Render-path assertions ---
 console.log('init: empty note display =', els['cemetery-empty'].style.display);
 

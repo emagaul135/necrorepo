@@ -73,6 +73,22 @@ function scoreRepo(r) {
 }
 
 /**
+ * Extract the last-publish date from an npm packument (full registry doc).
+ * Tries meta.time[latestVersion] first, falls back to meta.time.modified,
+ * and returns null if neither is available.
+ * Pure function — no DOM access.
+ * @param {object} meta  Parsed JSON from https://registry.npmjs.org/{pkg}
+ * @returns {string|null}  ISO date string, or null.
+ */
+function latestPublishDate(meta) {
+  if (!meta || !meta.time) return null;
+  var latestVer = (meta['dist-tags'] && meta['dist-tags'].latest) || meta.version || null;
+  if (latestVer && meta.time[latestVer]) return meta.time[latestVer];
+  if (meta.time.modified) return meta.time.modified;
+  return null;
+}
+
+/**
  * Map idle months (since last npm publish) to a dep health status.
  * Mirrors the five health buckets used by scoreRepo / statusOf.
  * Pure function -- no DOM access.
@@ -380,11 +396,12 @@ async function loadDependencyAutopsy(fullName, status) {
     // Fetch each package's npm metadata in parallel.
     var rows = await Promise.all(deps.map(async function(dep) {
       try {
-        var res = await fetch('https://registry.npmjs.org/' + encodeURIComponent(dep.name) + '/latest');
+        // Fetch the full packument — /latest omits the time map entirely.
+        var res = await fetch('https://registry.npmjs.org/' + encodeURIComponent(dep.name));
         if (!res.ok) throw new Error('status ' + res.status);
         var meta = await res.json();
-        var lastPublish = (meta.time && meta.time.modified) ? meta.time.modified : null;
-        var latestVer   = meta.version || '?';
+        var latestVer   = (meta['dist-tags'] && meta['dist-tags'].latest) || meta.version || '?';
+        var lastPublish = latestPublishDate(meta);
         var idle        = lastPublish ? monthsSince(lastPublish) : Infinity;
         var st          = depStatusOf(idle);
         var dateStr     = lastPublish ? new Date(lastPublish).toLocaleDateString('en-US',
@@ -524,5 +541,5 @@ document.getElementById('share-btn').addEventListener('click', async () => {
 
 /* Node test export (ignored in the browser). */
 if (typeof module !== 'undefined' && module.exports) {
-  module.exports = { scoreRepo, statusOf, monthsSince, busFactorLabel, depStatusOf, parsePackageJsonDeps, DEMO_CEMETERY, renderCemetery, showDetail };
+  module.exports = { scoreRepo, statusOf, monthsSince, busFactorLabel, depStatusOf, parsePackageJsonDeps, latestPublishDate, DEMO_CEMETERY, renderCemetery, showDetail };
 }
