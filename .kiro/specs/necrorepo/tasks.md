@@ -15,9 +15,11 @@
 - [x] Node tests: scoring assertions + fake-DOM render harness — all passing
 - [x] Live GitHub API shape verified with curl
 
-## Milestone 1 — Kiro auth + real Kiro sessions (BLOCKED — needs the user)
-- [ ] Log in Kiro CLI: `kiro-cli login --social google --use-device-flow`
+## Milestone 1 — Kiro auth + real Kiro sessions (DONE — login 2026-11-17)
+- [x] Log in Kiro CLI: `kiro-cli login --social google --use-device-flow`
       (prints a URL + code; the user opens it in their browser and approves)
+      — DONE 2026-11-17 16:1x WIB: `kiro-cli whoami` → "Logged in with
+      Builder ID, Email: oyentv770@gmail.com". Free plan.
 - [ ] Run a Kiro agent session in this repo to review the scaffold against the
       spec and implement the Milestone 2 items below (spec-driven: feed it
       `.kiro/specs/necrorepo/` and let it work the task list)
