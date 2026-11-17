@@ -3,7 +3,7 @@
 **Category:** Resurrection
 **Live app:** https://emagaul135.github.io/necrorepo/
 **Repository:** https://github.com/emagaul135/necrorepo
-**Demo video:** _to be added (under 3 minutes, public on YouTube)_
+**Demo video:** https://youtu.be/7hVtwQfiFcg (63 seconds, public on YouTube)
 
 ## What it does
 
@@ -88,8 +88,8 @@ and hook artefacts in this repository.
   the npm registry — no backend, no keys stored. An optional personal access
   token field (Bearer auth, never stored) lifts the 60 req/hr unauthenticated
   GitHub rate limit.
-- Hosting: GitHub Pages, deployed automatically by
-  `.github/workflows/pages.yml` on every push to `master`.
+- Hosting: GitHub Pages, serving the `master` branch `/docs` folder (the app
+  in `app/` is copied into `docs/` before each push).
 
 ## How to try it
 
